@@ -3,10 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\Ad;
+use App\Form\AnnonceType;
 use App\Repository\AdRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 
 class AdController extends AbstractController
 {
@@ -19,10 +22,49 @@ class AdController extends AbstractController
 
         $ads = $repo->findAll();
 
-        dump($ads);
+        //dump($ads);
 
         return $this->render('ad/index.html.twig', [
             'ads' => $ads
+        ]);
+    }
+
+
+    /**
+     * Permet de créer une annonce
+     * @Route("/ads/new", name="ads_create")
+     *
+     * @return Response
+     */
+    public function create(EntityManagerInterface $manager, Request $request)
+    {
+        $ad = new Ad();
+        //$title = $request->request->get('annonce');
+        //dump($title['title']);
+
+        $form = $this->createForm(AnnonceType::class,$ad);
+
+        $form->handleRequest($request);
+
+        //dump($ad);
+
+        if($form->isSubmitted() && $form->isValid()){
+            $manager->persist($ad);
+            $manager->flush();
+
+            $this->addFlash(
+                'success',
+                "L'annonce <strong>{$ad->getTitle()}</strong> a étée bien enregistrée"
+            );
+
+            return $this->redirectToRoute('ads_show',[
+                'slug' =>$ad->getSlug()
+            ]);
+        }
+
+
+        return $this->render('ad/new.html.twig',[
+            'myForm' => $form->createView()
         ]);
     }
 
@@ -34,19 +76,18 @@ class AdController extends AbstractController
      * @param [string] $slug
      * @return Response
      */
-    public function show($slug, Ad $ad)
+    public function show(Ad $ad)
     {
         //$repo = $this->getDoctrine()->getRepository(Ad::class);
         //$ad = $repo->findOneBySlug($slug);
 
 
-        dump($ad);
+        //dump($ad);
 
         return $this->render('ad/show.html.twig',[
             'ad' => $ad
         ]);
 
     }
-
-
 }
+
